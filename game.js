@@ -42,6 +42,7 @@ const grassHeight = 20;
 
 let score = 0;
 let isGameOver = false;
+let animationFrameId; 
 
 
 for (let i = 0; i < numClouds; i++) {
@@ -67,7 +68,11 @@ function drawEgg() {
 
 function drawPowerup() {
     if (powerup.active) {
-        ctx.fillStyle = '#00FF00'; 
+        if (powerup.type === 'speed') {
+            ctx.fillStyle = '#FF0000'; 
+        } else if (powerup.type === 'size') {
+            ctx.fillStyle = '#0000FF'; 
+        }
         ctx.fillRect(powerup.x, powerup.y, powerup.width, powerup.height);
     }
 }
@@ -91,6 +96,14 @@ function drawScore() {
     ctx.font = '20px Arial';
     ctx.fillStyle = '#000';
     ctx.fillText(`Score: ${score}`, 10, 20);
+}
+
+function drawRestartButton() {
+    ctx.fillStyle = '#000';
+    ctx.fillRect(canvas.width / 2 - 50, canvas.height / 2 + 50, 100, 40);
+    ctx.font = '20px Arial';
+    ctx.fillStyle = '#FFF';
+    ctx.fillText('Restart', canvas.width / 2 - 35, canvas.height / 2 + 75);
 }
 
 function moveBasket() {
@@ -170,6 +183,23 @@ function resetEgg() {
     egg.dy += egg.speedIncrement; 
 }
 
+function restartGame() {
+    score = 0;
+    isGameOver = false;
+    basket.x = canvas.width / 2 - 50;
+    basket.dx = 8;
+    basket.width = basket.originalWidth;
+    egg.dy = 5;
+    clouds.forEach(cloud => {
+        cloud.x = Math.random() * canvas.width;
+        cloud.y = Math.random() * (canvas.height / 2);
+    });
+
+    
+    canvas.removeEventListener('click', restartListener);
+    draw();
+}
+
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -193,6 +223,11 @@ function draw() {
         ctx.font = '40px Arial';
         ctx.fillStyle = '#000';
         ctx.fillText('Game Over', canvas.width / 2 - 100, canvas.height / 2);
+
+        
+        drawRestartButton();
+
+        canvas.addEventListener('click', restartListener);
         return;
     }
 
@@ -200,7 +235,20 @@ function draw() {
     moveEgg();
     movePowerup();
 
-    requestAnimationFrame(draw);
+    animationFrameId = requestAnimationFrame(draw);
+}
+
+function restartListener(event) {
+    const rect = canvas.getBoundingClientRect();
+    const clickX = event.clientX - rect.left;
+    const clickY = event.clientY - rect.top;
+
+    if (clickX >= canvas.width / 2 - 50 && clickX <= canvas.width / 2 + 50 &&
+        clickY >= canvas.height / 2 + 50 && clickY <= canvas.height / 2 + 90) {
+        canvas.removeEventListener('click', restartListener); 
+        cancelAnimationFrame(animationFrameId); 
+        restartGame(); 
+    }
 }
 
 document.addEventListener('keydown', keyDownHandler);
@@ -224,5 +272,6 @@ function keyUpHandler(e) {
         leftPressed = false;
     }
 }
+
 
 draw();
