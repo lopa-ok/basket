@@ -6,7 +6,10 @@ const basket = {
     height: 20,
     x: canvas.width / 2 - 50,
     y: canvas.height - 30,
-    dx: 5
+    dx: 8, 
+    originalWidth: 100, 
+    powerupWidth: 150, 
+    speedIncrement: 0.2 
 };
 
 const egg = {
@@ -18,8 +21,36 @@ const egg = {
     speedIncrement: 0.2 
 };
 
+const powerup = {
+    types: ['speed', 'size'], 
+    width: 20,
+    height: 20,
+    x: 0,
+    y: 0,
+    dx: 2, 
+    active: false, 
+    type: '', 
+    duration: 5000, 
+    timer: null 
+};
+
+const clouds = []; 
+const numClouds = 5; 
+const cloudSpeed = 0.5; 
+
+const grassHeight = 20; 
+
 let score = 0;
 let isGameOver = false;
+
+
+for (let i = 0; i < numClouds; i++) {
+    clouds.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * (canvas.height / 2),
+        radius: 30 + Math.random() * 20
+    });
+}
 
 function drawBasket() {
     ctx.fillStyle = '#8B4513'; 
@@ -32,6 +63,28 @@ function drawEgg() {
     ctx.fillStyle = '#FFD700'; 
     ctx.fill();
     ctx.closePath();
+}
+
+function drawPowerup() {
+    if (powerup.active) {
+        ctx.fillStyle = '#00FF00'; 
+        ctx.fillRect(powerup.x, powerup.y, powerup.width, powerup.height);
+    }
+}
+
+function drawClouds() {
+    ctx.fillStyle = '#FFFFFF'; 
+    clouds.forEach(cloud => {
+        ctx.beginPath();
+        ctx.arc(cloud.x, cloud.y, cloud.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.closePath();
+    });
+}
+
+function drawGrass() {
+    ctx.fillStyle = '#7CFC00'; 
+    ctx.fillRect(0, canvas.height - grassHeight, canvas.width, grassHeight);
 }
 
 function drawScore() {
@@ -61,6 +114,56 @@ function moveEgg() {
     }
 }
 
+function movePowerup() {
+    if (!powerup.active) {
+        
+        if (Math.random() < 0.01) { 
+            powerup.x = Math.random() * (canvas.width - powerup.width);
+            powerup.y = Math.random() * (canvas.height / 2); 
+            powerup.type = powerup.types[Math.floor(Math.random() * powerup.types.length)];
+            powerup.active = true;
+
+            
+            powerup.timer = setTimeout(deactivatePowerup, powerup.duration);
+        }
+    } else {
+        
+        powerup.y += powerup.dx;
+
+        
+        if (powerup.x > basket.x && powerup.x < basket.x + basket.width &&
+            powerup.y > basket.y && powerup.y < basket.y + basket.height) {
+            activatePowerup();
+        }
+
+        
+        if (powerup.y > canvas.height) {
+            deactivatePowerup();
+        }
+    }
+}
+
+function activatePowerup() {
+    if (powerup.type === 'speed') {
+        basket.dx *= 1.5; 
+        setTimeout(() => {
+            basket.dx /= 1.5; 
+        }, powerup.duration);
+    } else if (powerup.type === 'size') {
+        basket.width = basket.powerupWidth; 
+        setTimeout(() => {
+            basket.width = basket.originalWidth; 
+        }, powerup.duration);
+    }
+
+    deactivatePowerup();
+}
+
+function deactivatePowerup() {
+    powerup.active = false;
+    clearTimeout(powerup.timer);
+}
+
 function resetEgg() {
     egg.x = Math.random() * (canvas.width - egg.width);
     egg.y = 0;
@@ -69,8 +172,21 @@ function resetEgg() {
 
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    
+    ctx.fillStyle = '#87CEEB'; 
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    
+    drawClouds();
+
+    
+    drawGrass();
+
+    
     drawBasket();
     drawEgg();
+    drawPowerup();
     drawScore();
 
     if (isGameOver) {
@@ -82,6 +198,7 @@ function draw() {
 
     moveBasket();
     moveEgg();
+    movePowerup();
 
     requestAnimationFrame(draw);
 }
